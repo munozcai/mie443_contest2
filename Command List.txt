@@ -1,0 +1,66 @@
+Compiling
+	catkin_make
+______________________________________________________________________________________________
+********** Robot Simulation: **********
+______________________________________________________________________________________________
+- Move_base and OpenCV in Gazebo
+
+	roslaunch mie443_contest2 turtlebot_world.launch world:=1
+______________________________________________________________________________________________
+
+AMCL SIMULATION:
+
+- To run the amcl localization and obstacle avoidance algorithm in simulation:
+
+	roslaunch turtlebot_gazebo amcl_demo.launch map_file:=/home/turtlebot/catkin_ws/src/mie443_contest2/maps/map_1.yaml
+
+RVIZ:
+  roslaunch turtlebot_rviz_launchers  view_navigation.launch
+______________________________________________________________________________________________
+
+- Command to start running your code in simulation:
+	
+	rosrun mie443_contest2 contest2
+______________________________________________________________________________________________
+
+- OpenCV on TurtleBot Laptop Webcam
+  First add the following lines of code in the imagePipeline.cpp file and recompile:
+	
+	#define IMAGE_TOPIC "camera/image" //Kinect:"camera/rgb/image_raw" webcam:"camera/image"
+	
+  Next run the following node in a separate terminal:
+	
+	rosrun mie443_contest2 webcam_publisher 0
+______________________________________________________________________________________________
+______________________________________________________________________________________________
+
+______________________________________________________________________________________________
+********** Robot Execution: **********
+______________________________________________________________________________________________
+NOTE: If test in a different area than the contest environment, default
+map will not work. See Handout
+______________________________________________________________________________________________
+
+- This starts the TurtleBot Kobuki base and starts publishing topics.
+	
+	roslaunch turtlebot_bringup minimal.launch
+______________________________________________________________________________________________
+
+- This starts the Kinect sensor, loads the proper map and determines the robot’s
+location in the map.
+
+	roslaunch turtlebot_navigation amcl_demo.launch map_file:=/<map_path>/my_map.yaml
+______________________________________________________________________________________________
+
+o This command opens a plugin that visualizes the data that the robot is publishing and
+subscribing to. It also allows the user to troubleshoot the navigation algorithm by
+providing an interface to publish navigation goals for the TurtleBot to pursue.
+
+	roslaunch turtlebot_rviz_launchers view_navigation.launch
+______________________________________________________________________________________________
+
+- To execute your code, run the following line in its own terminal:
+
+	rosrun mie443_contest2 contest2
+______________________________________________________________________________________________
+______________________________________________________________________________________________
