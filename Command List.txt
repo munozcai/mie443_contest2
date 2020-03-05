@@ -8,16 +8,19 @@ ________________________________________________________________________________
 	roslaunch mie443_contest2 turtlebot_world.launch world:=1
 ______________________________________________________________________________________________
 
+AMCL SIMULATION:
+
 - To run the amcl localization and obstacle avoidance algorithm in simulation:
 
-	roslaunch turtlebot_gazebo amcl_demo.launch
+	roslaunch turtlebot_gazebo amcl_demo.launch map_file:=/home/turtlebot/catkin_ws/src/mie443_contest2/maps/map_1.yaml
 
-	map_file:=/home/turtlebot/catkin_ws/src/mie443_contest2/maps/map_1.yaml
+RVIZ:
+  roslaunch turtlebot_rviz_launchers  view_navigation.launch
 ______________________________________________________________________________________________
 
 - Command to start running your code in simulation:
 	
-	drosrun mie443_contest2 contest2
+	rosrun mie443_contest2 contest2
 ______________________________________________________________________________________________
 
 - OpenCV on TurtleBot Laptop Webcam

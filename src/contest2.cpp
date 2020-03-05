@@ -29,7 +29,7 @@ int main(int argc, char** argv) {
     // Initialize image objectand subscriber.
     ImagePipeline imagePipeline(n);
     // Execute strategy.
-
+    int state = 0;
     RobotPose initPos (0, 0, 0);
 
     while(ros::ok()) {
@@ -38,21 +38,26 @@ int main(int argc, char** argv) {
         // Use: boxes.coords
         // Use: robotPose.x, robotPose.y, robotPose.phi
 
-        // First Sweep for localization
-
-            // do sweep
+        if(state = 0){
             // save initial position
             initPos.x = robotPose.x;
             initPos.y = robotPose.y;
             initPos.phi = robotPose.phi;
-
             state = 1;
-        
-
-        // Go no next node
+        }
+        else if (state = 1){
+            //test location
+            Navigation::moveToGoal (boxes.coords[0][0], boxes.coords[0][1], boxes.coords[0][2]);
+            
+            // Go no next node
             // Image detection
             // Store tag and object location
             // Done traversing? Go back to initial position
+        }
+            
+        
+
+
             
         
         
