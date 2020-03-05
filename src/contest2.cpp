@@ -21,14 +21,41 @@ int main(int argc, char** argv) {
         std::cout << i << " x: " << boxes.coords[i][0] << " y: " << boxes.coords[i][1] << " z: " 
                   << boxes.coords[i][2] << std::endl;
     }
+
+    Boxes path; // reordered path to traverse. Include initial pos as destination
+
+    path = boxes;
+
     // Initialize image objectand subscriber.
     ImagePipeline imagePipeline(n);
     // Execute strategy.
+
+    RobotPose initPos (0, 0, 0);
+
     while(ros::ok()) {
         ros::spinOnce();
         /***YOUR CODE HERE***/
         // Use: boxes.coords
         // Use: robotPose.x, robotPose.y, robotPose.phi
+
+        // First Sweep for localization
+
+            // do sweep
+            // save initial position
+            initPos.x = robotPose.x;
+            initPos.y = robotPose.y;
+            initPos.phi = robotPose.phi;
+
+            state = 1;
+        
+
+        // Go no next node
+            // Image detection
+            // Store tag and object location
+            // Done traversing? Go back to initial position
+            
+        
+        
         imagePipeline.getTemplateID(boxes);
         ros::Duration(0.01).sleep();
     }
