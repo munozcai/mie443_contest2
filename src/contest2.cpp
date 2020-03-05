@@ -24,12 +24,14 @@ int main(int argc, char** argv) {
     // Initialize image objectand subscriber.
     ImagePipeline imagePipeline(n);
     // Execute strategy.
+    imagePipeline.imgObject(boxes);
     while(ros::ok()) {
         ros::spinOnce();
         /***YOUR CODE HERE***/
         // Use: boxes.coords
         // Use: robotPose.x, robotPose.y, robotPose.phi
         imagePipeline.getTemplateID(boxes);
+        
         ros::Duration(0.01).sleep();
     }
     return 0;

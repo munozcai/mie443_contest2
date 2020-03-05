@@ -14,15 +14,20 @@ Mat img_object0;
 Mat img_object1;
 Mat img_object2;
 Mat img_scene;
-Mat descriptors_object0,descriptors_object1,descriptors_object2;
+Mat descriptors_object0, descriptors_object1, descriptors_object2;
 Mat descriptors_scene;
-std::vector<KeyPoint> keypoints_object0,keypoints_object1,keypoints_object2;
+
+std::vector<KeyPoint> keypoints_object0, keypoints_object1, keypoints_object2;
+std::vector<KeyPoint> keypoints_scene;
+
 int minHessian = 400;
 Ptr<SURF> detector = SURF::create(minHessian);
+void descriptionInit();
 
 #define IMAGE_TYPE sensor_msgs::image_encodings::BGR8
 //#define IMAGE_TOPIC "camera/image" // kinect:"camera/rgb/image_raw" webcam:"camera/image"
 #define IMAGE_TOPIC "camera/image"
+
 ImagePipeline::ImagePipeline(ros::NodeHandle &n)
 {
     image_transport::ImageTransport it(n);
@@ -49,6 +54,13 @@ void ImagePipeline::imageCallback(const sensor_msgs::ImageConstPtr &msg)
     }
 }
 
+void ImagePipeline::imgObject(Boxes &boxes)
+{
+    img_object0 = boxes.templates[0]; // raisin
+    img_object1 = boxes.templates[1];
+    img_object2 = boxes.templates[2];
+    descriptionInit();
+}
 int ImagePipeline::getTemplateID(Boxes &boxes)
 {
     int template_id = -1;
@@ -69,16 +81,12 @@ int ImagePipeline::getTemplateID(Boxes &boxes)
         // Use: boxes.templates
         std::cout << "VALID IMAGE!" << std::endl;
         // from template
-        img_object0 = boxes.templates[0]; // raisin 
-        img_object1 = boxes.templates[1];
-        img_object2 = boxes.templates[2];
+
         //from image feed
         img_scene = img;
+        getID();
 
-        getID(boxes);
-        
-        
-        cv::imshow("view", img);
+        //cv::imshow("view", img);
         cv::waitKey(10);
     }
     return template_id;
@@ -86,7 +94,7 @@ int ImagePipeline::getTemplateID(Boxes &boxes)
 
 void descriptionInit()
 {
-   
+
     detector->detectAndCompute(img_object0, Mat(), keypoints_object0,
                                descriptors_object0);
 
@@ -94,12 +102,10 @@ void descriptionInit()
                                descriptors_object1);
     detector->detectAndCompute(img_object2, Mat(), keypoints_object2,
                                descriptors_object2);
-
-
 }
-void detection (Mat descriptors_object, Mat img_object, Mat keypoints_object)
+int detection(Mat descriptors_object, Mat img_object, std::vector<KeyPoint> keypoints_object)
 {
-//-- Step 3: Matching descriptor vectors using FLANN matcher
+    //-- Step 3: Matching descriptor vectors using FLANN matcher
     FlannBasedMatcher matcher;
     std::vector<DMatch> matches;
     matcher.match(descriptors_object, descriptors_scene, matches);
@@ -127,64 +133,82 @@ void detection (Mat descriptors_object, Mat img_object, Mat keypoints_object)
             good_matches.push_back(matches[i]);
         }
     }
-    Mat img_matches;
-    drawMatches(img_object, keypoints_object, img_scene, keypoints_scene,
-                good_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
-                std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
-    //-- Localize the object
-    std::vector<Point2f> obj;
-    std::vector<Point2f> scene;
-    for (int i = 0; i < good_matches.size(); i++)
+
+    if (good_matches.size() < 4)
     {
-        //-- Get the keypoints from the good matches
-        obj.push_back(keypoints_object[good_matches[i].queryIdx].pt);
-        scene.push_back(keypoints_scene[good_matches[i].trainIdx].pt);
+        std::cout << "Not enough good matches available in this image- Aldo" << std::endl;
     }
+    else
+    {
+        Mat img_matches;
+        if (keypoints_scene.size() < 1)
+        {
+            std::cerr << "ISSUE MAYBE\n";
+            return -1 ;
+        }
+        drawMatches(img_object, keypoints_object, img_scene, keypoints_scene,
+                    good_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
+                    std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
+        //-- Localize the object
+        std::vector<Point2f> obj;
+        std::vector<Point2f> scene;
+        for (int i = 0; i < good_matches.size(); i++)
+        {
+            //-- Get the keypoints from the good matches
+            obj.push_back(keypoints_object[good_matches[i].queryIdx].pt);
+            scene.push_back(keypoints_scene[good_matches[i].trainIdx].pt);
+        }
 
-    Mat H = findHomography(obj, scene, RANSAC);
-    //-- Get the corners from the image_1 ( the object to be "detected" )
-    std::vector<Point2f> obj_corners(4);
-    obj_corners[0] = cvPoint(0, 0);
-    obj_corners[1] = cvPoint(img_object.cols, 0);
-    obj_corners[2] = cvPoint(img_object.cols, img_object.rows);
-    obj_corners[3] =
-        cvPoint(0, img_object.rows);
-    std::vector<Point2f> scene_corners(4);
-    perspectiveTransform(obj_corners, scene_corners, H);
+        std::cout << good_matches.size() << std::endl;
+        Mat H = findHomography(obj, scene, RANSAC);
+        
+        if (H.empty())
+        {
+            return -1;
+        }
+        
+        //-- Get the corners from the image_1 ( the object to be "detected" )
+        std::vector<Point2f> obj_corners(4);
+        obj_corners[0] = cvPoint(0, 0);
+        obj_corners[1] = cvPoint(img_object.cols, 0);
+        obj_corners[2] = cvPoint(img_object.cols, img_object.rows);
+        obj_corners[3] = cvPoint(0, img_object.rows);
+        std::vector<Point2f> scene_corners(4);
+        std::cout << "obj " << obj_corners.size() << std::endl;
+        std::cout << "Scene " << scene_corners.size() << std::endl;
+        std::cout << "H " << H << std::endl;
+        perspectiveTransform(obj_corners, scene_corners, H);
 
-    //-- Draw lines between the corners (the mapped object in the scene - image_2 )
-    line(img_matches, scene_corners[0] + Point2f(img_object.cols, 0),
-         scene_corners[1] + Point2f(img_object.cols, 0), Scalar(0, 255, 0), 4);
-    line(img_matches, scene_corners[1] + Point2f(img_object.cols, 0),
-         scene_corners[2] + Point2f(img_object.cols, 0), Scalar(0, 255, 0), 4);
-    line(img_matches, scene_corners[2] + Point2f(img_object.cols, 0),
-         scene_corners[3] + Point2f(img_object.cols, 0), Scalar(0, 255, 0), 4);
-    line(img_matches, scene_corners[3] + Point2f(img_object.cols, 0),
-         scene_corners[0] + Point2f(img_object.cols, 0), Scalar(0, 255, 0), 4);
-    //-- Show detected matches
-    imshow("Good Matches & Object detection", img_matches);
-   //waitKey(0);
+        //-- Draw lines between the corners (the mapped object in the scene - image_2 )
+        line(img_matches, scene_corners[0] + Point2f(img_object.cols, 0),
+             scene_corners[1] + Point2f(img_object.cols, 0), Scalar(0, 255, 0), 4);
+        line(img_matches, scene_corners[1] + Point2f(img_object.cols, 0),
+             scene_corners[2] + Point2f(img_object.cols, 0), Scalar(0, 255, 0), 4);
+        line(img_matches, scene_corners[2] + Point2f(img_object.cols, 0),
+             scene_corners[3] + Point2f(img_object.cols, 0), Scalar(0, 255, 0), 4);
+        line(img_matches, scene_corners[3] + Point2f(img_object.cols, 0),
+             scene_corners[0] + Point2f(img_object.cols, 0), Scalar(0, 255, 0), 4);
+        //-- Show detected matches
+        imshow("Good Matches & Object detection", img_matches);
+
+        return good_matches.size();
+        //waitKey(0);
+    }
 }
 
-int ImagePipeline::getID(Boxes &boxes)
+int ImagePipeline::getID()
 {
     if (!img_scene.data)
     {
-        std::cout << " --(!) Error reading images " << std::endl;
+       
         return -1;
     }
-    
 
-    //-- Step 1 & 2: Detect the keypoints and calculate descriptors using SURF
-   // int minHessian = 400;
-    //Ptr<SURF> detector = SURF::create(minHessian);
-
-    std::vector<KeyPoint> keypoints_scene;
-    Mat descriptors_scene;
-    descriptionInit();
     detector->detectAndCompute(img_scene, Mat(), keypoints_scene,
                                descriptors_scene);
-    detection(descriptors_object0,img_object0,keypoints_object0);
+
+   int numGM = detection(descriptors_object2, img_object2, keypoints_object2);
+    std::cout << " --(!) GM num "<< numGM << std::endl;
 
 }
 /** @function readme */
