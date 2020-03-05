@@ -105,6 +105,7 @@ void descriptionInit()
 }
 int detection(Mat descriptors_object, Mat img_object, std::vector<KeyPoint> keypoints_object)
 {
+    /*
     //-- Step 3: Matching descriptor vectors using FLANN matcher
     FlannBasedMatcher matcher;
     std::vector<DMatch> matches;
@@ -124,6 +125,9 @@ int detection(Mat descriptors_object, Mat img_object, std::vector<KeyPoint> keyp
     printf("-- Max dist : %f \n", max_dist);
     printf("-- Min dist : %f \n", min_dist);
 
+*/
+   
+/*
     //-- Draw only "good" matches (i.e. whose distance is less than 3*min_dist )
     std::vector<DMatch> good_matches;
     for (int i = 0; i < descriptors_object.rows; i++)
@@ -131,6 +135,20 @@ int detection(Mat descriptors_object, Mat img_object, std::vector<KeyPoint> keyp
         if (matches[i].distance < 3 * min_dist)
         {
             good_matches.push_back(matches[i]);
+        }
+    }
+    */
+    Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create(DescriptorMatcher::FLANNBASED);
+    std::vector<std::vector<DMatch>> knn_matches;
+    matcher->knnMatch(descriptors_object, descriptors_scene, knn_matches, 2);
+
+    const float ratio_thresh = 0.75f;
+    std::vector<DMatch> good_matches;
+    for (size_t i = 0; i < knn_matches.size(); i++)
+    {
+        if (knn_matches[i][0].distance < ratio_thresh * knn_matches[i][1].distance)
+        {
+            good_matches.push_back(knn_matches[i][0]);
         }
     }
 
@@ -144,7 +162,7 @@ int detection(Mat descriptors_object, Mat img_object, std::vector<KeyPoint> keyp
         if (keypoints_scene.size() < 1)
         {
             std::cerr << "ISSUE MAYBE\n";
-            return -1 ;
+            return -1;
         }
         drawMatches(img_object, keypoints_object, img_scene, keypoints_scene,
                     good_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
@@ -161,12 +179,12 @@ int detection(Mat descriptors_object, Mat img_object, std::vector<KeyPoint> keyp
 
         std::cout << good_matches.size() << std::endl;
         Mat H = findHomography(obj, scene, RANSAC);
-        
+
         if (H.empty())
         {
             return -1;
         }
-        
+
         //-- Get the corners from the image_1 ( the object to be "detected" )
         std::vector<Point2f> obj_corners(4);
         obj_corners[0] = cvPoint(0, 0);
@@ -200,15 +218,14 @@ int ImagePipeline::getID()
 {
     if (!img_scene.data)
     {
-       
+
         return -1;
     }
 
     detector->detectAndCompute(img_scene, Mat(), keypoints_scene,
                                descriptors_scene);
 
-   int numGM = detection(descriptors_object2, img_object2, keypoints_object2);
-    std::cout << " --(!) GM num "<< numGM << std::endl;
-
+    int numGM = detection(descriptors_object2, img_object2, keypoints_object2);
+    std::cout << " --(!) GM num " << numGM << std::endl;
 }
 /** @function readme */
