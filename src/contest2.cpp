@@ -3,6 +3,28 @@
 #include <robot_pose.h>
 #include <imagePipeline.h>
 
+std::vector<float> get_box_offset(std::vector<float>  box, float offset){
+
+    std::vector<float> offset_coords;
+
+    float x = cos(box[2])*offset + box[0];
+    float y = cos(box[2])*offset + box[1];
+
+    offset_coords.push_back(x);
+    offset_coords.push_back(y);
+    offset_coords.push_back(box[2]);
+
+    std::cout << "Box coordinates: " << std::endl;
+        std::cout << " x: " << box[0] << " y: " << box[1] << " z: " 
+                  << box[2] << std::endl;
+     std::cout << "Target coordinates: " << std::endl;
+        std::cout << " x: " << offset_coords[0] << " y: " << offset_coords[1] << " z: " 
+                  << offset_coords[2] << std::endl;
+
+
+    return offset_coords;
+}
+
 int main(int argc, char** argv) {
     // Setup ROS.
     ros::init(argc, argv, "contest2");
@@ -31,6 +53,8 @@ int main(int argc, char** argv) {
     // Execute strategy.
     int state = 0;
     RobotPose initPos (0, 0, 0);
+    bool move_done = false;
+    int index = 4;
 
     while(ros::ok()) {
         ros::spinOnce();
@@ -47,13 +71,23 @@ int main(int argc, char** argv) {
         }
         else if (state = 1){
             //test location
-            Navigation::moveToGoal (boxes.coords[0][0], boxes.coords[0][1], boxes.coords[0][2]);
+            if (!move_done){
+
+                std::vector<float>  box = get_box_offset(boxes.coords[index], 0.7);
+
+                move_done = Navigation::moveToGoal (box[0], box[1], box[2]);
+            } else {
+                ROS_INFO("Moving to next box");
+                move_done = false;
+                index -= 1;
+                if (index == -1) index = 4;
+            }
             
             // Go no next node
             // Image detection
             // Store tag and object location
             // Done traversing? Go back to initial position
-        }
+        }http://wiki.ros.osuosl.org/costmap_2d
             
         
 
@@ -61,7 +95,7 @@ int main(int argc, char** argv) {
             
         
         
-        imagePipeline.getTemplateID(boxes);
+        //imagePipeline.getTemplateID(boxes);
         ros::Duration(0.01).sleep();
     }
     return 0;
