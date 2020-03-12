@@ -2,7 +2,7 @@ boxes_database/
 include/
 launch/
 maps/
-worlds/
+models/
 CMakeLists.txt
 package.xml
 README.md
