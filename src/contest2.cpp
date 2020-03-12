@@ -67,13 +67,9 @@ void permutation(char *a, int l, int r, char *b, float &minDist){//l-> start of 
 }
 
 
-std::vector<float> get_box_offset(std::vector<float>  box, RobotPose initPose, float offset){
+std::vector<float> get_box_offset(std::vector<float>  box, float offset){
 
     std::vector<float> offset_coords;
-
-    //box[0] += initPose.x;
-    //box[1] += initPose.y;
-    //box[2] += initPose.phi;
 
     float phi = box[2];
     float x = cos(phi)*offset + box[0];
@@ -95,14 +91,17 @@ std::vector<float> get_box_offset(std::vector<float>  box, RobotPose initPose, f
     return offset_coords;
 }
 
-
 typedef enum  {
     NONE = 0,
     INITIALIZE,
+    PATH_PLANNER,
     MOVE_TO_TARGET,
     CAPTURE,
+    RETRY_TARGET,
     DONE,
 } STATE;
+
+#define TARGET_OFFSET 0.6
 
 int main(int argc, char** argv) {
     // Setup ROS.
@@ -123,10 +122,7 @@ int main(int argc, char** argv) {
                   << boxes.coords[i][2] << std::endl;
     }
 
-    Boxes path; // reordered path to traverse. Include initial pos as destination
-
-    path = boxes;
-
+  
 
     // Initialize image objectand subscriber.
     ImagePipeline imagePipeline(n);
@@ -134,7 +130,7 @@ int main(int argc, char** argv) {
     STATE state = INITIALIZE;
     RobotPose initPos (0, 0, 0);
     bool move_done = false;
-    int index = 4;
+    int index_target = 0;
 
 
     
@@ -167,6 +163,7 @@ int main(int argc, char** argv) {
 
     std::cout << "Optimized Combination: " << combination<< "  min dist:  "<< minDist<< std::endl;
 
+    std::vector<std::vector<float>> path; // reordered path to traverse. Include initial pos as destination
 
     while(ros::ok()) {
         ros::spinOnce();
@@ -177,32 +174,81 @@ int main(int argc, char** argv) {
         switch (state)
         {
         case INITIALIZE:
-            ros::Duration(2).sleep();
+            // Localize initial position
+            ros::Duration(5).sleep();
+            ros::spinOnce();
+            
+            // Save initial position
             initPos.x = robotPose.x;
             initPos.y = robotPose.y;
             initPos.phi = robotPose.phi;
 
+            // calculate target coordinates
+            for(int i = 0; i < boxes.coords.size(); ++i) {
+                std::cout << "Box coordinates: "  << i << std::endl;
+                path.push_back(get_box_offset(boxes.coords[i], TARGET_OFFSET));
+            }
+
+            state = PATH_PLANNER;
+            break;
+
+        case PATH_PLANNER: // this is state is used again later to recalculate best path among unreachable targets
+            // Find optimal path
+
             // ADD TSP HERE
+            // TSP(initPos, path); // modify path to reflect ordered list
+
 
             state = MOVE_TO_TARGET;
             break;
-        
+            
         case MOVE_TO_TARGET:
-            if (!move_done){
 
-                std::vector<float>  box = get_box_offset(boxes.coords[index], initPos, 0.7);
+            if ( path.empty()){
+                state = DONE;
+                break;
+            }
+            // Move base to target
+            move_done = Navigation::moveToGoal (path[index_target][0], path[index_target][1], path[index_target][2]);
 
-                move_done = true;
-                Navigation::moveToGoal (box[0], box[1], box[2]);
-            } else {
-                ROS_INFO("Moving to next box");
-                move_done = false;
-                index += 1;
-                if (index == 5) index = 0;
+            // Navigation done
+            if (move_done){
+                ROS_INFO("Target reached! %d left", path.size()-1);
+                index_target = 0; // first element is next
+                path.erase(path.begin()); // delete entry from list
+                state = CAPTURE;
+            } 
+            // Navigation failed, go to next target
+            else { 
+                if (index_target < path.size() - 1 ){
+                    ROS_ERROR("UNREACHABLE TARGET, going to next target");
+                    index_target += 1;
+                }
+                else { // retry from first element 
+                    index_target = 0; // restart 
+                    state = RETRY_TARGET;
+                }
             }
             break;
 
         case CAPTURE:
+            // ADD OPEN CV CODE HERE
+
+            state = RETRY_TARGET;
+            break;
+
+        case RETRY_TARGET:
+        
+            // Replan path wigh targets left
+            state = PATH_PLANNER;
+            break;
+
+        case DONE:
+            
+            // Go back to initial position forever
+            Navigation::moveToGoal (initPos.x, initPos.y, initPos.phi);
+
+            break;
 
         default:
             break;
