@@ -8,7 +8,7 @@
 
 //float distance, minDist;
 char combination[10];
-float coord[]={8.5,1.0,  1.2,1.5,  1.3,1.5, -1.2,-2.3,  1.3,3.7};//C1, C2, C3, C4, C5
+float coord[10];//={8.5,1.0,  1.2,1.5,  1.3,1.5, -1.2,-2.3,  1.3,3.7};//C1, C2, C3, C4, C5
 
 //to fill out coordinates x, y with 1 followed by 2, 3, 4, 5
 
@@ -95,6 +95,14 @@ std::vector<float> get_box_offset(std::vector<float>  box, RobotPose initPose, f
     return offset_coords;
 }
 
+//template< class T >
+//void reorder(vector<T> &v, char[] const &order )  {   
+  //  for ( int s = 1, d; s < order.size(); ++ s ) {
+//        for ( d = order[s]-"1"; d < s; d = order[d]-"1" ) ;
+  //      if ( d == s ) while ( d = order[d]-"1", d != s ) swap( v[s], v[d] );
+   // }
+///}
+
 int main(int argc, char** argv) {
     // Setup ROS.
     ros::init(argc, argv, "contest2");
@@ -161,6 +169,15 @@ int main(int argc, char** argv) {
 
     std::cout << "Optimized Combination: " << combination<< "  min dist:  "<< minDist<< std::endl;
 
+
+    //reorder(boxes, combination );
+    std::cout << "New order"<<std::endl;
+    for(int i=0; i<length; i++){
+        for(int j=0; j<length;j++){
+            std::cout<<combination[i]<<" | ";
+        }
+        std::cout<<std::endl;
+    }
 
     while(ros::ok()) {
         ros::spinOnce();
