@@ -9,7 +9,7 @@ int coordinateIndex = 0;
 
 int ID = 5;
 
-bool IDmatcher(int ID)
+bool IDmatcher(int ID,int coordinateIndex)
 {
 
     if (ID != -1)
@@ -82,7 +82,7 @@ int main(int argc, char **argv)
             int ID = imagePipeline.getTemplateID(boxes);
             // std::cout << " template_id is: " << ID << std::endl;
 
-        if (IDmatcher(ID))
+        if (IDmatcher(ID,coordinateIndex))
         {
             matchFound = true;
             std::cout << "ID MATCH FOUND: " << ID << std::endl;
