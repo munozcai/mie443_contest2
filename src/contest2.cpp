@@ -3,46 +3,45 @@
 #include <robot_pose.h>
 #include <imagePipeline.h>
 bool matchFound = false;
-float result[5];
-int coordinateIndex = 0;
 
+typedef struct{
+    std::string tag = "none";
+    int tag_ID = -1;
+    int coordinateIdx = -1;
+    bool found = 0;
+    bool repeated = 0;
+} tag_info;
 
-int ID = 5;
+tag_info result [5];
+int coordinateIndex = 4;
 
-bool IDmatcher(int ID,int coordinateIndex)
+bool IDmatcher(int ID,int coord)
 {
 
     if (ID != -1)
     {
+        tag_info object_temp = result [coord];
+        object_temp.tag_ID = ID;
+        object_temp.coordinateIdx = coord;
+        if (object_temp.found)
+            object_temp.repeated = 1;
+            
+        else object_temp.found = 1;
 
         //std::cout << " template_id is: " << ID << std::endl;
-        if (ID == 0)
-        {
-            std::cout << "Raisin Bran" << std::endl;
-            result[coordinateIndex] = ID;
-        }
-        else if (ID == 1)
-        {
-            std::cout << "Cinnamon Toast Crunch" << std::endl;
-            result[coordinateIndex] = ID;
-        }
-        else if (ID == 2)
-        {
-            std::cout << "Rice Krispies " << std::endl;
-            result[coordinateIndex] = ID;
-        }
 
-        else if (ID == 3)
-        {
-            std::cout << "Blank " << std::endl;
-            result[coordinateIndex] = ID;
-        }
+        if (ID == 0) object_temp.tag = "Raisin Bran";
+        else if (ID == 1) object_temp.tag = "Cinnamon Toast Crunch";
+        else if (ID == 2) object_temp.tag = "Rice Krispies";
+        else if (ID == 3) object_temp.tag = "Blank";
 
+        std::cout << "Tag Matched for: " << object_temp.tag << std::endl;
         return true;
     }
     else
     {
         std::cout << " Match has not been found " << std::endl;
+        //matchFound=false;
         return false;
     }
 }
@@ -77,6 +76,7 @@ int main(int argc, char **argv)
         /***YOUR CODE HERE***/
         // Use: boxes.coords
         // Use: robotPose.x, robotPose.y, robotPose.phi
+       // matchFound = false;
         if (!matchFound)
         {
             int ID = imagePipeline.getTemplateID(boxes);
