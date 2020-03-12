@@ -95,13 +95,14 @@ std::vector<float> get_box_offset(std::vector<float>  box, RobotPose initPose, f
     return offset_coords;
 }
 
-//template< class T >
-//void reorder(vector<T> &v, char[] const &order )  {   
-  //  for ( int s = 1, d; s < order.size(); ++ s ) {
-//        for ( d = order[s]-"1"; d < s; d = order[d]-"1" ) ;
-  //      if ( d == s ) while ( d = order[d]-"1", d != s ) swap( v[s], v[d] );
-   // }
-///}
+
+typedef enum  {
+    NONE = 0,
+    INITIALIZE,
+    MOVE_TO_TARGET,
+    CAPTURE,
+    DONE,
+} STATE;
 
 int main(int argc, char** argv) {
     // Setup ROS.
@@ -126,14 +127,11 @@ int main(int argc, char** argv) {
 
     path = boxes;
 
-    // Localize
-    ros::Duration(2).sleep();
-    ros::spinOnce();
 
     // Initialize image objectand subscriber.
     ImagePipeline imagePipeline(n);
     // Execute strategy.
-    int state = 0;
+    STATE state = INITIALIZE;
     RobotPose initPos (0, 0, 0);
     bool move_done = false;
     int index = 4;
@@ -170,30 +168,26 @@ int main(int argc, char** argv) {
     std::cout << "Optimized Combination: " << combination<< "  min dist:  "<< minDist<< std::endl;
 
 
-    //reorder(boxes, combination );
-    std::cout << "New order"<<std::endl;
-    for(int i=0; i<length; i++){
-        for(int j=0; j<length;j++){
-            std::cout<<combination[i]<<" | ";
-        }
-        std::cout<<std::endl;
-    }
-
     while(ros::ok()) {
         ros::spinOnce();
         /***YOUR CODE HERE***/
         // Use: boxes.coords
         // Use: robotPose.x, robotPose.y, robotPose.phi
 
-        if(state = 0){
-            // save initial position
+        switch (state)
+        {
+        case INITIALIZE:
+            ros::Duration(2).sleep();
             initPos.x = robotPose.x;
             initPos.y = robotPose.y;
             initPos.phi = robotPose.phi;
-            state = 1;
-        }
-        else if (state = 1){
-            //test location
+
+            // ADD TSP HERE
+
+            state = MOVE_TO_TARGET;
+            break;
+        
+        case MOVE_TO_TARGET:
             if (!move_done){
 
                 std::vector<float>  box = get_box_offset(boxes.coords[index], initPos, 0.7);
@@ -206,13 +200,15 @@ int main(int argc, char** argv) {
                 index += 1;
                 if (index == 5) index = 0;
             }
-            
-            // Go no next node
-            // Image detection
-            // Store tag and object location
-            // Done traversing? Go back to initial position
-        }http://wiki.ros.osuosl.org/costmap_2d
-            
+            break;
+
+        case CAPTURE:
+
+        default:
+            break;
+        }
+
+       
         
 
 
