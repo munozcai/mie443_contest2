@@ -3,9 +3,13 @@
 #include <robot_pose.h>
 #include <imagePipeline.h>
 
-std::vector<float> get_box_offset(std::vector<float>  box, float offset){
+std::vector<float> get_box_offset(std::vector<float>  box, RobotPose initPose, float offset){
 
     std::vector<float> offset_coords;
+
+    box[0] += initPose.x;
+    box[1] += initPose.y;
+    box[2] += initPose.phi;
 
     float x = cos(box[2])*offset + box[0];
     float y = cos(box[2])*offset + box[1];
@@ -73,9 +77,10 @@ int main(int argc, char** argv) {
             //test location
             if (!move_done){
 
-                std::vector<float>  box = get_box_offset(boxes.coords[index], 0.7);
+                std::vector<float>  box = get_box_offset(boxes.coords[index], initPos, 0.7);
 
-                move_done = Navigation::moveToGoal (box[0], box[1], box[2]);
+                move_done = true;
+                Navigation::moveToGoal (box[0], box[1], box[2]);
             } else {
                 ROS_INFO("Moving to next box");
                 move_done = false;
