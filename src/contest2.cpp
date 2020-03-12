@@ -4,8 +4,48 @@
 #include <imagePipeline.h>
 bool matchFound = false;
 float result[5];
-int coordinateIndex;
+int coordinateIndex = 0;
 
+
+int ID = 5;
+
+bool IDmatcher(int ID)
+{
+
+    if (ID != -1)
+    {
+
+        //std::cout << " template_id is: " << ID << std::endl;
+        if (ID == 0)
+        {
+            std::cout << "Raisin Bran" << std::endl;
+            result[coordinateIndex] = ID;
+        }
+        else if (ID == 1)
+        {
+            std::cout << "Cinnamon Toast Crunch" << std::endl;
+            result[coordinateIndex] = ID;
+        }
+        else if (ID == 2)
+        {
+            std::cout << "Rice Krispies " << std::endl;
+            result[coordinateIndex] = ID;
+        }
+
+        else if (ID == 3)
+        {
+            std::cout << "Blank " << std::endl;
+            result[coordinateIndex] = ID;
+        }
+
+        return true;
+    }
+    else
+    {
+        std::cout << " Match has not been found " << std::endl;
+        return false;
+    }
+}
 int main(int argc, char **argv)
 {
     // Setup ROS.
@@ -29,7 +69,7 @@ int main(int argc, char **argv)
     }
     // Initialize image objectand subscriber.
     ImagePipeline imagePipeline(n);
-    
+
     // Execute strategy.
     while (ros::ok())
     {
@@ -37,43 +77,23 @@ int main(int argc, char **argv)
         /***YOUR CODE HERE***/
         // Use: boxes.coords
         // Use: robotPose.x, robotPose.y, robotPose.phi
-        
+        if (!matchFound)
+        {
+            int ID = imagePipeline.getTemplateID(boxes);
+            // std::cout << " template_id is: " << ID << std::endl;
 
-        int ID = imagePipeline.getTemplateID(boxes);
-        std::cout << " template_id is: " << ID << std::endl;
-        if (!matchFound && ID != -1)
+        if (IDmatcher(ID))
         {
             matchFound = true;
-            std::cout << " template_id is: " << ID << std::endl;
-            if (ID == 0)
-            {
-                std::cout << "Raisin Bran" << std::endl;
-                result[coordinateIndex]= ID;
-            }
-            else if (ID == 1)
-            {
-                std::cout << "Cinnamon Toast Crunch" << std::endl;
-                result[coordinateIndex]= ID;
-            } 
-            else if (ID == 2)
-            {
-                std::cout << "Rice Krispies " << std::endl;
-                result[coordinateIndex]= ID;
-            }
-
-            else if(ID == 3)
-            {
-                std::cout << "Blank " << std::endl;
-                result[coordinateIndex]= ID;
-            }
-          
-
-           break;
+            std::cout << "ID MATCH FOUND: " << ID << std::endl;
+            std::cout << "MOVE TO NEXT OBJECT" << std::endl;
         }
-        else
-        {
-            std::cout << " Match has not been found " << std::endl;
         }
+
+        //  int ID = imagePipeline.getTemplateID(boxes);
+
+       
+
 
         ros::Duration(0.01).sleep();
     }
