@@ -7,16 +7,18 @@ std::vector<float> get_box_offset(std::vector<float>  box, RobotPose initPose, f
 
     std::vector<float> offset_coords;
 
-    box[0] += initPose.x;
-    box[1] += initPose.y;
-    box[2] += initPose.phi;
+    //box[0] += initPose.x;
+    //box[1] += initPose.y;
+    //box[2] += initPose.phi;
 
-    float x = cos(box[2])*offset + box[0];
-    float y = cos(box[2])*offset + box[1];
+    float phi = box[2];
+    float x = cos(phi)*offset + box[0];
+    float y = sin(phi)*offset + box[1];
+    
 
     offset_coords.push_back(x);
     offset_coords.push_back(y);
-    offset_coords.push_back(box[2]);
+    offset_coords.push_back(phi+M_PI);
 
     std::cout << "Box coordinates: " << std::endl;
         std::cout << " x: " << box[0] << " y: " << box[1] << " z: " 
@@ -52,6 +54,10 @@ int main(int argc, char** argv) {
 
     path = boxes;
 
+    // Localize
+    ros::Duration(2).sleep();
+    ros::spinOnce();
+
     // Initialize image objectand subscriber.
     ImagePipeline imagePipeline(n);
     // Execute strategy.
@@ -84,8 +90,8 @@ int main(int argc, char** argv) {
             } else {
                 ROS_INFO("Moving to next box");
                 move_done = false;
-                index -= 1;
-                if (index == -1) index = 4;
+                index += 1;
+                if (index == 5) index = 0;
             }
             
             // Go no next node
