@@ -2,6 +2,7 @@
 #include <navigation.h>
 #include <robot_pose.h>
 #include <imagePipeline.h>
+<<<<<<< HEAD
 #include <iostream>
 #include <bits/stdc++.h>
 #include <string>
@@ -112,6 +113,51 @@ typedef enum
 
 #define TARGET_OFFSET 0.6
 
+=======
+bool matchFound = false;
+
+typedef struct{
+    std::string tag = "none";
+    int tag_ID = -1;
+    int coordinateIdx = -1;
+    bool found = 0;
+    bool repeated = 0;
+} tag_info;
+
+tag_info result [5];
+int coordinateIndex = 4;
+
+bool IDmatcher(int ID,int coord)
+{
+
+    if (ID != -1)
+    {
+        tag_info object_temp = result [coord];
+        object_temp.tag_ID = ID;
+        object_temp.coordinateIdx = coord;
+        if (object_temp.found)
+            object_temp.repeated = 1;
+            
+        else object_temp.found = 1;
+
+        //std::cout << " template_id is: " << ID << std::endl;
+
+        if (ID == 0) object_temp.tag = "Raisin Bran";
+        else if (ID == 1) object_temp.tag = "Cinnamon Toast Crunch";
+        else if (ID == 2) object_temp.tag = "Rice Krispies";
+        else if (ID == 3) object_temp.tag = "Blank";
+
+        std::cout << "Tag Matched for: " << object_temp.tag << std::endl;
+        return true;
+    }
+    else
+    {
+        std::cout << " Match has not been found " << std::endl;
+        //matchFound=false;
+        return false;
+    }
+}
+>>>>>>> tj_branch
 int main(int argc, char **argv)
 {
     // Setup ROS.
@@ -140,6 +186,7 @@ int main(int argc, char **argv)
     ImagePipeline imagePipeline(n);
 
     // Execute strategy.
+<<<<<<< HEAD
     STATE state = INITIALIZE;
     RobotPose initPos(0, 0, 0);
     bool move_done = false;
@@ -174,12 +221,15 @@ int main(int argc, char **argv)
 
     std::cout << "Optimized Combination: " << combination << "  min dist:  " << minDist << std::endl;
 
+=======
+>>>>>>> tj_branch
     while (ros::ok())
     {
         ros::spinOnce();
         /***YOUR CODE HERE***/
         // Use: boxes.coords
         // Use: robotPose.x, robotPose.y, robotPose.phi
+<<<<<<< HEAD
 
         switch (state)
         {
@@ -274,6 +324,27 @@ int main(int argc, char **argv)
         }
 
         //imagePipeline.getTemplateID(boxes);
+=======
+       // matchFound = false;
+        if (!matchFound)
+        {
+            int ID = imagePipeline.getTemplateID(boxes);
+            // std::cout << " template_id is: " << ID << std::endl;
+
+        if (IDmatcher(ID,coordinateIndex))
+        {
+            matchFound = true;
+            std::cout << "ID MATCH FOUND: " << ID << std::endl;
+            std::cout << "MOVE TO NEXT OBJECT" << std::endl;
+        }
+        }
+
+        //  int ID = imagePipeline.getTemplateID(boxes);
+
+       
+
+
+>>>>>>> tj_branch
         ros::Duration(0.01).sleep();
     }
     return 0;
