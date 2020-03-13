@@ -2,7 +2,6 @@
 #include <navigation.h>
 #include <robot_pose.h>
 #include <imagePipeline.h>
-<<<<<<< HEAD
 #include <iostream>
 #include <bits/stdc++.h>
 #include <string>
@@ -10,7 +9,7 @@
 //float distance, minDist;
 char combination[10];
 float coord[10]; //={8.5,1.0,  1.2,1.5,  1.3,1.5, -1.2,-2.3,  1.3,3.7};//C1, C2, C3, C4, C5
-
+int ID;
 //to fill out coordinates x, y with 1 followed by 2, 3, 4, 5
 
 float dist[10][10]; //distance matrix ABCD X ABCD for coordinates ABCD;
@@ -113,10 +112,10 @@ typedef enum
 
 #define TARGET_OFFSET 0.6
 
-=======
-bool matchFound = false;
+//bool matchFound = false;
 
-typedef struct{
+typedef struct
+{
     std::string tag = "none";
     int tag_ID = -1;
     int coordinateIdx = -1;
@@ -124,28 +123,33 @@ typedef struct{
     bool repeated = 0;
 } tag_info;
 
-tag_info result [5];
+tag_info result[5];
 int coordinateIndex = 4;
 
-bool IDmatcher(int ID,int coord)
+bool IDmatcher(int ID, int coord)
 {
 
     if (ID != -1)
     {
-        tag_info object_temp = result [coord];
+        tag_info object_temp = result[coord];
         object_temp.tag_ID = ID;
         object_temp.coordinateIdx = coord;
         if (object_temp.found)
             object_temp.repeated = 1;
-            
-        else object_temp.found = 1;
+
+        else
+            object_temp.found = 1;
 
         //std::cout << " template_id is: " << ID << std::endl;
 
-        if (ID == 0) object_temp.tag = "Raisin Bran";
-        else if (ID == 1) object_temp.tag = "Cinnamon Toast Crunch";
-        else if (ID == 2) object_temp.tag = "Rice Krispies";
-        else if (ID == 3) object_temp.tag = "Blank";
+        if (ID == 0)
+            object_temp.tag = "Raisin Bran";
+        else if (ID == 1)
+            object_temp.tag = "Cinnamon Toast Crunch";
+        else if (ID == 2)
+            object_temp.tag = "Rice Krispies";
+        else if (ID == 3)
+            object_temp.tag = "Blank";
 
         std::cout << "Tag Matched for: " << object_temp.tag << std::endl;
         return true;
@@ -157,7 +161,39 @@ bool IDmatcher(int ID,int coord)
         return false;
     }
 }
->>>>>>> tj_branch
+
+void gen_txt(Boxes finalPath)
+{
+    std::cout << "\n Generating report files... \n";
+    const char *path = "/home/munozcai/catkin_ws/src/mie443_contest2/file.txt";
+    std::ofstream file(path);
+    std::string data = "********* MIE443 -Contest 2 *********\nTeam 15 \n \n OBJECT AND TAG REPORT:";
+
+    for (int i = 0; i < finalPath.coords.size(); i++)
+    {
+        tag_info object_temp = result[i];
+
+        std::string ID = "\n \n Node ID:\t" + std::to_string(object_temp.tag_ID);
+        std::string tag = "\n Tag:\t \t" + object_temp.tag;
+        data += ID + tag;
+        if (object_temp.coordinateIdx != -1)
+        {
+            std::string coord = "\n Coordinates: \n \t x: \t" + std::to_string(finalPath.coords[object_temp.coordinateIdx][0]) + "\t y: \t" + std::to_string(finalPath.coords[object_temp.coordinateIdx][1]) + "\t phi: \t" + std::to_string(finalPath.coords[object_temp.coordinateIdx][2]);
+            data += coord;
+        }
+        else
+            data += "\n Coordinates: \tNo object set";
+
+        if (object_temp.repeated)
+            data += "\n THIS IS A REPEATED TAG!";
+    }
+
+    file << data;
+
+    file.close();
+    std::cout << data;
+}
+
 int main(int argc, char **argv)
 {
     // Setup ROS.
@@ -186,13 +222,12 @@ int main(int argc, char **argv)
     ImagePipeline imagePipeline(n);
 
     // Execute strategy.
-<<<<<<< HEAD
     STATE state = INITIALIZE;
     RobotPose initPos(0, 0, 0);
     bool move_done = false;
     int index_target = 0;
     std::vector<std::vector<float>> path; // reordered path to traverse. Include initial pos as destination
-
+    std::vector<float> path_idx;
     //Optimized path code:
     for (int i = 0; i < boxes.coords.size(); i++)
     {
@@ -221,20 +256,19 @@ int main(int argc, char **argv)
 
     std::cout << "Optimized Combination: " << combination << "  min dist:  " << minDist << std::endl;
 
-=======
->>>>>>> tj_branch
-    while (ros::ok())
+    bool all_done = false;
+    while (ros::ok() && !all_done) // add timer of 5 minutes
     {
         ros::spinOnce();
         /***YOUR CODE HERE***/
         // Use: boxes.coords
         // Use: robotPose.x, robotPose.y, robotPose.phi
-<<<<<<< HEAD
 
         switch (state)
         {
         case INITIALIZE:
             // Localize initial position
+            std::cout << "\n NOTE: Ensure that robot is localized \n";
             ros::Duration(5).sleep();
             ros::spinOnce();
 
@@ -251,6 +285,7 @@ int main(int argc, char **argv)
             {
                 std::cout << "Box coordinates: " << i << std::endl;
                 path.push_back(get_box_offset(boxes.coords[i], TARGET_OFFSET));
+                path_idx.push_back(i);
             }
 
             state = PATH_PLANNER;
@@ -261,6 +296,7 @@ int main(int argc, char **argv)
 
             // ADD TSP HERE
             // TSP(initPos, path); // modify path to reflect ordered list
+            // take care of path_idx 
 
             state = MOVE_TO_TARGET;
             break;
@@ -278,9 +314,8 @@ int main(int argc, char **argv)
             // Navigation done
             if (move_done)
             {
-                ROS_INFO("Target reached! %d left", path.size() - 1);
-                index_target = 0;         // first element is next
-                path.erase(path.begin()); // delete entry from list
+                ROS_INFO("Target reached! %d targets left", path.size() - 1);
+
                 state = CAPTURE;
             }
             // Navigation failed, go to next target
@@ -290,10 +325,11 @@ int main(int argc, char **argv)
                 {
                     ROS_ERROR("UNREACHABLE TARGET, going to next target");
                     index_target += 1;
+                    state = MOVE_TO_TARGET;
+                    break;
                 }
                 else
-                {                     // retry from first element
-                    index_target = 0; // restart
+                { // retry from first element
                     state = RETRY_TARGET;
                 }
             }
@@ -302,8 +338,27 @@ int main(int argc, char **argv)
         case CAPTURE:
             // ADD OPEN CV CODE HERE
 
-            state = RETRY_TARGET;
-            break;
+            ID = imagePipeline.getTemplateID(boxes);
+
+            // std::cout << " template_id is: " << ID << std::endl;
+
+            if (IDmatcher(ID, int(path_idx[index_target])))
+            {
+                // matchFound = true;
+                std::cout << "ID MATCH FOUND: " << ID << std::endl;
+                std::cout << "MOVE TO NEXT OBJECT" << std::endl;
+
+                path.erase(path.begin() + index_target); // delete entry from list
+                path_idx.erase(path_idx.begin() + index_target);
+
+                state = MOVE_TO_TARGET;
+                break;
+            }
+            else
+            {
+                index_target += 1;
+                state = RETRY_TARGET;
+            }
 
         case RETRY_TARGET:
 
@@ -315,37 +370,23 @@ int main(int argc, char **argv)
         case DONE:
 
             // Go back to initial position forever
-            Navigation::moveToGoal(initPos.x, initPos.y, initPos.phi);
+            all_done = Navigation::moveToGoal(initPos.x, initPos.y, initPos.phi);
 
             break;
 
         default:
             break;
         }
-
+        
         //imagePipeline.getTemplateID(boxes);
-=======
-       // matchFound = false;
-        if (!matchFound)
-        {
-            int ID = imagePipeline.getTemplateID(boxes);
-            // std::cout << " template_id is: " << ID << std::endl;
-
-        if (IDmatcher(ID,coordinateIndex))
-        {
-            matchFound = true;
-            std::cout << "ID MATCH FOUND: " << ID << std::endl;
-            std::cout << "MOVE TO NEXT OBJECT" << std::endl;
-        }
-        }
+        // matchFound = false;
 
         //  int ID = imagePipeline.getTemplateID(boxes);
 
-       
-
-
->>>>>>> tj_branch
         ros::Duration(0.01).sleep();
     }
+
+    gen_txt(boxes);
+
     return 0;
 }
