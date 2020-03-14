@@ -8,11 +8,12 @@
 
 //float distance, minDist;
 char combination[10];
-float coord[]={8.5,1.0,  1.2,1.5,  1.3,1.5, -1.2,-2.3,  1.3,3.7};//C1, C2, C3, C4, C5
-
+float coord[10];//={8.5,1.0,  1.2,1.5,  1.3,1.5, -1.2,-2.3,  1.3,3.7};//C1, C2, C3, C4, C5
+float localized_coord[2];
 //to fill out coordinates x, y with 1 followed by 2, 3, 4, 5
 
 float dist[10][10];//distance matrix ABCD X ABCD for coordinates ABCD;
+
 float sqr_dist(float x1, float y1, float x2, float y2){
     return std::sqrt(  ((x1-x2)*(x1-x2)) + ((y1-y2)*(y1-y2)) );
 }
@@ -46,6 +47,9 @@ void permutation(char *a, int l, int r, char *b, float &minDist){//l-> start of 
             //distance = dist[(int(*a) - 65)][(int(*(a+1)) - 65)] + dist[(int(*(a+1)) - 65)][(int(*(a+2)) - 65)] + dist[(int(*(a+2)) - 65)][(int(*(a+4)) - 65)];
             distance += dist[(int(*(a+k)) - 49)][(int(*(a+k+1)) - 49)];
         }
+        distance += sqr_dist(localized_coord[0], localized_coord[1], coord[2*(int(*a) - 49)], coord[2*(int(*(a+1)) - 49) + 1]);//x-> 2i, y-> 2i+1
+        distance += sqr_dist(coord[2*(int(*(a+8)) - 49)], coord[2*(int(*(a+9)) - 49) + 1], localized_coord[0], localized_coord[1]);//for return distance
+
         if(distance < minDist && distance>0.){
             for(int p=0;p<r;p++){
                 *(b+p) = *(a+p);
@@ -99,6 +103,14 @@ int main(int argc, char** argv) {
 
     
     //Optimized path code:
+    float final_combination[10];
+    float minDist=1000.;
+    char coordinates_ID[] = "12345";
+    int length = strlen(coordinates_ID);
+    populate_dist(length);
+
+
+
 
     for(int i=0; i< boxes.coords.size(); i++)
     {
@@ -112,22 +124,19 @@ int main(int argc, char** argv) {
 
 
 
-    float minDist=1000.;
-    char coordinates_ID[] = "12345";
-    int length = strlen(coordinates_ID);
-    populate_dist(length);
-
+    
     for(int i=0; i<length; i++){
         for(int j=0; j<length;j++){
             std::cout<<dist[i][j]<<"|";
         }
         std::cout<<std::endl;
     }
-    permutation(coordinates_ID, 0, length, combination, minDist);
+
 
     std::cout << "Optimized Combination: " << combination<< "  min dist:  "<< minDist<< std::endl;
 
 
+    int counter_1 = 0;
     while(ros::ok()) {
         ros::spinOnce();
         /***YOUR CODE HERE***/
@@ -139,6 +148,22 @@ int main(int argc, char** argv) {
             initPos.x = robotPose.x;
             initPos.y = robotPose.y;
             initPos.phi = robotPose.phi;
+            localized_coord[0] = initPos.x;
+            localized_coord[1] = initPos.y;
+            permutation(coordinates_ID, 0, length, combination, minDist);
+
+            for(int i=0;i<length;i++){//getting the coordinates for optimized route
+                final_combination[counter_1] = coord[(int(combination[i]) - 49+1)];
+                final_combination[counter_1 + 1] = coord[(int(combination[i]) - 49) +1+1];
+                 std::cout << "Optimized Coordinates (index):   " << (int(combination[i]) - 49+1)<< " , "<< (int(combination[i]) - 49) +1+1 << std::endl;
+                counter_1 += 2;
+            }    
+                std::cout << "Optimized Combination: " << combination<< "  min dist:  "<< minDist<< std::endl;
+            
+            for(int i=0; i< 0.5*(sizeof(final_combination)/sizeof(int)) ;i++){
+                std::cout << "Optimized Coordinates:   " << final_combination[i]<< "  ,  "<< final_combination[i+1] << std::endl;
+            }         
+            
             state = 1;
         }
         else if (state = 1){
