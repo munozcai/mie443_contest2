@@ -110,7 +110,7 @@ typedef enum
     DONE,
 } STATE;
 
-#define TARGET_OFFSET 0.6
+#define TARGET_OFFSET 0.4
 
 //bool matchFound = false;
 
@@ -119,7 +119,6 @@ typedef struct
     std::string tag = "none";
     int tag_ID = -1;
     int coordinateIdx = -1;
-    bool found = 0;
     bool repeated = 0;
 } tag_info;
 
@@ -131,14 +130,13 @@ bool IDmatcher(int ID, int coord)
 
     if (ID != -1)
     {
-        tag_info object_temp = result[coord];
+        tag_info object_temp;
         object_temp.tag_ID = ID;
         object_temp.coordinateIdx = coord;
-        if (object_temp.found)
-            object_temp.repeated = 1;
-
-        else
-            object_temp.found = 1;
+        
+        for (int i = 0; i < 5; i++){
+            if (ID == result[i].tag_ID) object_temp.repeated = 1;
+        }
 
         //std::cout << " template_id is: " << ID << std::endl;
 
@@ -151,7 +149,8 @@ bool IDmatcher(int ID, int coord)
         else if (ID == 3)
             object_temp.tag = "Blank";
 
-        std::cout << "Tag Matched for: " << object_temp.tag << std::endl;
+        std::cout << "Tag Matched for: " << object_temp.tag << "ID: "<< ID << std::endl;
+        result[coord] = object_temp;
         return true;
     }
     else
@@ -165,7 +164,7 @@ bool IDmatcher(int ID, int coord)
 void gen_txt(Boxes finalPath)
 {
     std::cout << "\n Generating report files... \n";
-    const char *path = "/home/munozcai/catkin_ws/src/mie443_contest2/file.txt";
+    const char *path = "/home/file.txt";
     std::ofstream file(path);
     std::string data = "********* MIE443 -Contest 2 *********\nTeam 15 \n \n OBJECT AND TAG REPORT:";
 
@@ -185,7 +184,7 @@ void gen_txt(Boxes finalPath)
             data += "\n Coordinates: \tNo object set";
 
         if (object_temp.repeated)
-            data += "\n THIS IS A REPEATED TAG!";
+            data += "\n THIS IS A REPEATED TAG!\n";
     }
 
     file << data;
@@ -358,6 +357,7 @@ int main(int argc, char **argv)
             {
                 index_target += 1;
                 state = RETRY_TARGET;
+                break;
             }
 
         case RETRY_TARGET:

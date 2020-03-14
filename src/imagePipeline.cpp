@@ -188,7 +188,7 @@ int ImagePipeline::getTemplateID(Boxes &boxes)
         /***YOUR CODE HERE***/
         // Use: boxes.templates
         cv::waitKey(200);
-        template_id = 3;
+        template_id = 4;
        
         for (int i = 0; i < 3; i++)
         {
@@ -221,7 +221,7 @@ int ImagePipeline::getTemplateID(Boxes &boxes)
 
         cv::waitKey(10);
     }
-    if (maxGM > 75)
+    if (maxGM > 60)
     {
         return template_id;
     }
