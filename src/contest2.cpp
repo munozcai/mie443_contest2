@@ -6,13 +6,18 @@
 #include <bits/stdc++.h>
 #include <string>
 
+
+/* *************************************************************** 
+                START Helper Functions
+ *************************************************************** */
 //float distance, minDist;
 char combination[10];
 float coord[10]; //={8.5,1.0,  1.2,1.5,  1.3,1.5, -1.2,-2.3,  1.3,3.7};//C1, C2, C3, C4, C5
 int ID;
 //to fill out coordinates x, y with 1 followed by 2, 3, 4, 5
 
-float dist[10][10]; //distance matrix ABCD X ABCD for coordinates ABCD;
+// Distance matrix ABCD X ABCD for coordinates ABCD. Takes two end points (x,y) and returns their distance
+float dist[10][10]; 
 float sqr_dist(float x1, float y1, float x2, float y2)
 {
     return std::sqrt(((x1 - x2) * (x1 - x2)) + ((y1 - y2) * (y1 - y2)));
@@ -77,6 +82,7 @@ void permutation(char *a, int l, int r, char *b, float &minDist)
 }
 
 // Calcualtes target location at a TARGET_OFFSET distance from box center facing the object
+#define TARGET_OFFSET 0.4
 std::vector<float> get_box_offset(std::vector<float> box, float offset)
 {
     std::vector<float> offset_coords;
@@ -98,26 +104,12 @@ std::vector<float> get_box_offset(std::vector<float> box, float offset)
 
     return offset_coords;
 }
-
-typedef enum
-{
-    NONE = 0,
-    INITIALIZE,
-    PATH_PLANNER,
-    MOVE_TO_TARGET,
-    CAPTURE,
-    RETRY_TARGET,
-    DONE,
-} STATE;
-
-#define TARGET_OFFSET 0.4
-
-//bool matchFound = false;
-
+// IDmatcher() to be called after image has been detected and an ID was found
+// This function initializes the array <tag_info> result for reporting purposes of identified tags and object locations
 typedef struct
 {
-    std::string tag = "none";
-    int tag_ID = -1;
+    std::string tag = "NOT SET";
+    int tag_ID = -10;
     int coordinateIdx = -1;
     bool repeated = 0;
 } tag_info;
@@ -125,14 +117,14 @@ typedef struct
 tag_info result[5];
 int coordinateIndex = 4;
 
-bool IDmatcher(int ID, int coord)
+bool id_matcher(int ID, int coordinates)
 {
 
     if (ID != -1)
     {
         tag_info object_temp;
         object_temp.tag_ID = ID;
-        object_temp.coordinateIdx = coord;
+        object_temp.coordinateIdx = coordinates;
         
         for (int i = 0; i < 5; i++){
             if (ID == result[i].tag_ID) object_temp.repeated = 1;
@@ -150,7 +142,7 @@ bool IDmatcher(int ID, int coord)
             object_temp.tag = "Blank";
 
         std::cout << "Tag Matched for: " << object_temp.tag << "ID: "<< ID << std::endl;
-        result[coord] = object_temp;
+        result[coordinates] = object_temp;
         return true;
     }
     else
@@ -161,6 +153,9 @@ bool IDmatcher(int ID, int coord)
     }
 }
 
+
+// gen_txt() is called when the robot has finished traversing or when the timer expired.
+// this funtion creates a .txt file with the tags and the objects location
 void gen_txt(Boxes finalPath)
 {
     std::cout << "\n Generating report files... \n";
@@ -177,7 +172,9 @@ void gen_txt(Boxes finalPath)
         data += ID + tag;
         if (object_temp.coordinateIdx != -1)
         {
-            std::string coord = "\n Coordinates: \n \t x: \t" + std::to_string(finalPath.coords[object_temp.coordinateIdx][0]) + "\t y: \t" + std::to_string(finalPath.coords[object_temp.coordinateIdx][1]) + "\t phi: \t" + std::to_string(finalPath.coords[object_temp.coordinateIdx][2]);
+            std::string coord = "\n Coordinates: \n \t x: \t" + std::to_string(finalPath.coords[object_temp.coordinateIdx][0]) 
+            + "\t y: \t" + std::to_string(finalPath.coords[object_temp.coordinateIdx][1]) 
+            + "\t phi: \t" + std::to_string(finalPath.coords[object_temp.coordinateIdx][2]);
             data += coord;
         }
         else
@@ -192,6 +189,20 @@ void gen_txt(Boxes finalPath)
     file.close();
     std::cout << data;
 }
+/* *************************************************************** 
+                END Helper Functions
+ *************************************************************** */
+
+typedef enum
+{
+    NONE = 0,
+    INITIALIZE,
+    PATH_PLANNER,
+    MOVE_TO_TARGET,
+    CAPTURE,
+    RETRY_TARGET,
+    DONE,
+} STATE;
 
 int main(int argc, char **argv)
 {
@@ -271,7 +282,7 @@ int main(int argc, char **argv)
             ros::Duration(5).sleep();
             ros::spinOnce();
 
-            // Save initial position
+            // Save initial position. For "returning to initial position" purposes
             initPos.x = robotPose.x;
             initPos.y = robotPose.y;
             initPos.phi = robotPose.phi;
@@ -279,7 +290,7 @@ int main(int argc, char **argv)
             std::cout << "Initial Position: " << std::endl;
             std::cout << " x: " << initPos.x << " y: " << initPos.y << " z: " << initPos.phi << std::endl;
 
-            // calculate target coordinates
+            // Calculate target coordinates with an OFFSET
             for (int i = 0; i < boxes.coords.size(); ++i)
             {
                 std::cout << "Box coordinates: " << i << std::endl;
@@ -341,7 +352,7 @@ int main(int argc, char **argv)
 
             // std::cout << " template_id is: " << ID << std::endl;
 
-            if (IDmatcher(ID, int(path_idx[index_target])))
+            if (id_matcher(ID, int(path_idx[index_target])))
             {
                 // matchFound = true;
                 std::cout << "ID MATCH FOUND: " << ID << std::endl;
