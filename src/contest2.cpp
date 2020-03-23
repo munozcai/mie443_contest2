@@ -6,27 +6,26 @@
 #include <bits/stdc++.h>
 #include <string>
 
-
 /* *************************************************************** 
                 START Helper Functions
  *************************************************************** */
 //float distance, minDist;
 char combination[10];
-float coord[10];//={8.5,1.0,  1.2,1.5,  1.3,1.5, -1.2,-2.3,  1.3,3.7};//C1, C2, C3, C4, C5
-float localized_coord[2];
-int ID;
+float coord[10]; //={8.5,1.0,  1.2,1.5,  1.3,1.5, -1.2,-2.3,  1.3,3.7};//C1, C2, C3, C4, C5
+
 //to fill out coordinates x, y with 1 followed by 2, 3, 4, 5
 
 // Distance matrix ABCD X ABCD for coordinates ABCD. Takes two end points (x,y) and returns their distance
-float dist[10][10]; 
+float dist[10][10];
 float sqr_dist(float x1, float y1, float x2, float y2)
-    return std::sqrt(((x1 - x2) * (x1 - x2)) + ((y1 - y2) * (y1 - y2)));
 {
+    return std::sqrt(((x1 - x2) * (x1 - x2)) + ((y1 - y2) * (y1 - y2)));
 }
 void populate_dist(int n)
 {
     int p = 0;
     int q = 0;
+
     for (int i = 0; i < n; i++)
     {
         for (int j = 0; j < n; j++)
@@ -46,7 +45,7 @@ void swap_fcn(char *a, char *b)
     *b = temp;
 }
 
-void permutation(char *a, int l, int r, char *b, float &minDist)
+void permutation(RobotPose localized_coord, char *a, int l, int r, char *b, float &minDist)
 { //l-> start of string, r-> end of string ABCD, a-> ptr to first character of string
     float distance;
     //float minDist = distance;
@@ -59,12 +58,13 @@ void permutation(char *a, int l, int r, char *b, float &minDist)
             //distance = dist[(int(*a) - 65)][(int(*(a+1)) - 65)] + dist[(int(*(a+1)) - 65)][(int(*(a+2)) - 65)] + dist[(int(*(a+2)) - 65)][(int(*(a+4)) - 65)];
             distance += dist[(int(*(a + k)) - 49)][(int(*(a + k + 1)) - 49)];
         }
-        distance += sqr_dist(localized_coord[0], localized_coord[1], coord[2*(int(*a) - 49)], coord[2*(int(*(a+1)) - 49) + 1]);//x-> 2i, y-> 2i+1
-        distance += sqr_dist(coord[2*(int(*(a+8)) - 49)], coord[2*(int(*(a+9)) - 49) + 1], localized_coord[0], localized_coord[1]);//for return distance
-        if(distance < minDist && distance>0.){
-            for(int p=0;p<r;p++){
-                *(b+p) = *(a+p);
-
+        distance += sqr_dist(localized_coord.x, localized_coord.y, coord[2 * (int(*a) - 49)], coord[2 * (int(*(a + 1)) - 49) + 1]);       //x-> 2i, y-> 2i+1
+        distance += sqr_dist(coord[2 * (int(*(a + 8)) - 49)], coord[2 * (int(*(a + 9)) - 49) + 1], localized_coord.x, localized_coord.y); //for return distance
+        if (distance < minDist && distance > 0.)
+        {
+            for (int p = 0; p < r; p++)
+            {
+                *(b + p) = *(a + p);
             }
             minDist = distance;
         }
@@ -77,13 +77,44 @@ void permutation(char *a, int l, int r, char *b, float &minDist)
         for (int i = l; i < r; i++)
         {
             swap_fcn((a + l), (a + i));
-            permutation(a, l + 1, r, combination, minDist); //recursive call
-            swap_fcn((a + l), (a + i));                     //change it back to original for the next for loop
+            permutation(localized_coord, a, l + 1, r, combination, minDist); //recursive call
+            swap_fcn((a + l), (a + i));                                      //change it back to original for the next for loop
         }
     }
 }
 
-// Calcualtes target location at a TARGET_OFFSET distance from box center facing the object
+void reorder_path_idx(int length, std::vector<float> &path_idx)
+{
+    std::vector<float> temp_idx;
+
+    if (path_idx.empty())
+    {
+        std::cerr << "\n Path is EMPTY \n"
+                  << std::endl;
+    }
+    else
+    {
+        path_idx.clear();
+
+        for (int i = 0; i < length; i++)
+        { //getting the coordinates for optimized route
+            temp_idx.push_back((int(combination[i]) - 49 + 1));
+            std::cout << "Optimized Coordinates (index):   " << (int(combination[i]) - 49 + 1) << std::endl;
+        }
+        path_idx = temp_idx;
+    }
+}
+
+std::vector<std::vector<float>> reorder_path(std::vector<std::vector<float>> path, std::vector<float> path_idx){
+    std::vector<std::vector<float>> new_path;
+    for(auto i = path_idx.begin(); i!= path_idx.end(); i++){
+        new_path.push_back(path[*i-1]);
+        std::cout << "\nNew Box index:" << *i-1 << "\nx:" << path[*i-1][0] << "\ny:" << path[*i-1][1] << "\nphi:" << path[*i-1][3] << std::endl;
+    }
+    return new_path;
+}
+
+// Calculates target location at a TARGET_OFFSET distance from box center facing the object
 #define TARGET_OFFSET 0.4
 std::vector<float> get_box_offset(std::vector<float> box, float offset)
 {
@@ -106,8 +137,11 @@ std::vector<float> get_box_offset(std::vector<float> box, float offset)
 
     return offset_coords;
 }
-// IDmatcher() to be called after image has been detected and an ID was found
+// id_matcher() to be called after image has been detected and an ID was found
 // This function initializes the array <tag_info> result for reporting purposes of identified tags and object locations
+
+int ID;
+
 typedef struct
 {
     std::string tag = "NOT SET";
@@ -124,12 +158,15 @@ bool id_matcher(int ID, int coordinates)
 
     if (ID != -1)
     {
+        std::cout << "\n ID received: \t" << ID << std::endl;
         tag_info object_temp;
         object_temp.tag_ID = ID;
         object_temp.coordinateIdx = coordinates;
-        
-        for (int i = 0; i < 5; i++){
-            if (ID == result[i].tag_ID) object_temp.repeated = 1;
+
+        for (int i = 0; i < 5; i++)
+        {
+            if (ID == result[i].tag_ID)
+                object_temp.repeated = 1;
         }
 
         //std::cout << " template_id is: " << ID << std::endl;
@@ -143,26 +180,25 @@ bool id_matcher(int ID, int coordinates)
         else if (ID == 3)
             object_temp.tag = "Blank";
 
-        std::cout << "Tag Matched for: " << object_temp.tag << "ID: "<< ID << std::endl;
+        std::cout << "Tag Matched for: " << object_temp.tag << std::endl;
         result[coordinates] = object_temp;
         return true;
     }
     else
     {
-        std::cout << " Match has not been found " << std::endl;
+        std::cerr << " Match has not been found " << std::endl;
         //matchFound=false;
         return false;
     }
 }
-
 
 // gen_txt() is called when the robot has finished traversing or when the timer expired.
 // this funtion creates a .txt file with the tags and the objects location
 void gen_txt(Boxes finalPath)
 {
     std::cout << "\n Generating report files... \n";
-    const char *path = "/home/file.txt";
-    std::ofstream file(path);
+    const char *file_path = "/home/file.txt";
+    std::ofstream file(file_path);
     std::string data = "********* MIE443 -Contest 2 *********\nTeam 15 \n \n OBJECT AND TAG REPORT:";
 
     for (int i = 0; i < finalPath.coords.size(); i++)
@@ -174,10 +210,8 @@ void gen_txt(Boxes finalPath)
         data += ID + tag;
         if (object_temp.coordinateIdx != -1)
         {
-            std::string coord = "\n Coordinates: \n \t x: \t" + std::to_string(finalPath.coords[object_temp.coordinateIdx][0]) 
-            + "\t y: \t" + std::to_string(finalPath.coords[object_temp.coordinateIdx][1]) 
-            + "\t phi: \t" + std::to_string(finalPath.coords[object_temp.coordinateIdx][2]);
-            data += coord;
+            std::string coordinates = "\n Coordinates: \n \t x: \t" + std::to_string(finalPath.coords[object_temp.coordinateIdx][0]) + "\t y: \t" + std::to_string(finalPath.coords[object_temp.coordinateIdx][1]) + "\t phi: \t" + std::to_string(finalPath.coords[object_temp.coordinateIdx][2]);
+            data += coordinates;
         }
         else
             data += "\n Coordinates: \tNo object set";
@@ -195,6 +229,11 @@ void gen_txt(Boxes finalPath)
                 END Helper Functions
  *************************************************************** */
 
+/* *************************************************************** 
+                START Main Function
+ *************************************************************** */
+
+// Contest 2: states
 typedef enum
 {
     NONE = 0,
@@ -208,6 +247,8 @@ typedef enum
 
 int main(int argc, char **argv)
 {
+    // string homedir = getenv("HOME");
+    // std:cout << "THIS IS A TEST............\n"<< homedir << "\n\n\n"<< endl;
     // Setup ROS.
     ros::init(argc, argv, "contest2");
     ros::NodeHandle n;
@@ -230,25 +271,26 @@ int main(int argc, char **argv)
                   << boxes.coords[i][2] << std::endl;
     }
 
-    // Initialize image objectand subscriber.
+    // Initialize image object and subscriber.
     ImagePipeline imagePipeline(n);
 
-    // Execute strategy.
+    // Execute strategy
     STATE state = INITIALIZE;
     RobotPose initPos(0, 0, 0);
     bool move_done = false;
     int index_target = 0;
-    std::vector<std::vector<float>> path; // reordered path to traverse. Include initial pos as destination
-    std::vector<float> path_idx;
+    std::vector<std::vector<float>> path; // reordered path to traverse. Do NOT include initial pos as destination
+    std::vector<float> path_idx;          //reordered path index
+
     //Optimized path code:
-    float final_combination[10];
-    float minDist=1000.;
+    float minDist = 1000.;
     char coordinates_ID[] = "12345";
     int length = strlen(coordinates_ID);
-    populate_dist(length);
-    for(int i=0; i< boxes.coords.size(); i++)
+
+    int counter = 0;
+    for (int i = 0; i < boxes.coords.size(); i++)
     {
-        int counter = 0;
+
         for (int j = 0; j < 2; j++)
         {
             coord[counter] = boxes.coords[i][j];
@@ -256,9 +298,6 @@ int main(int argc, char **argv)
         }
     }
 
-    float minDist = 1000.;
-    char coordinates_ID[] = "12345";
-    int length = strlen(coordinates_ID);
     populate_dist(length);
 
     for (int i = 0; i < length; i++)
@@ -270,16 +309,13 @@ int main(int argc, char **argv)
         std::cout << std::endl;
     }
 
-    std::cout << "Optimized Combination: " << combination<< "  min dist:  "<< minDist<< std::endl;
-
+    bool all_done = false;
     while (ros::ok() && !all_done) // add timer of 5 minutes
     {
-    int counter_1 = 0;
-    bool all_done = false;
+        int counter_1 = 0;
+        bool all_done = false;
         ros::spinOnce();
         /***YOUR CODE HERE***/
-        // Use: boxes.coords
-        // Use: robotPose.x, robotPose.y, robotPose.phi
 
         switch (state)
         {
@@ -293,23 +329,6 @@ int main(int argc, char **argv)
             initPos.x = robotPose.x;
             initPos.y = robotPose.y;
             initPos.phi = robotPose.phi;
-            localized_coord[0] = initPos.x;
-            localized_coord[1] = initPos.y;
-            permutation(coordinates_ID, 0, length, combination, minDist);
-
-            for(int i=0;i<length;i++){//getting the coordinates for optimized route
-                final_combination[counter_1] = coord[(int(combination[i]) - 49+1)];
-                final_combination[counter_1 + 1] = coord[(int(combination[i]) - 49) +1+1];
-                 std::cout << "Optimized Coordinates (index):   " << (int(combination[i]) - 49+1)<< " , "<< (int(combination[i]) - 49) +1+1 << std::endl;
-                counter_1 += 2;
-            }    
-                std::cout << "Optimized Combination: " << combination<< "  min dist:  "<< minDist<< std::endl;
-            
-            for(int i=0; i< 0.5*(sizeof(final_combination)/sizeof(int)) ;i++){
-                std::cout << "Optimized Coordinates:   " << final_combination[i]<< "  ,  "<< final_combination[i+1] << std::endl;
-            }         
-            
-            state = 1;
 
             std::cout << "Initial Position: " << std::endl;
             std::cout << " x: " << initPos.x << " y: " << initPos.y << " z: " << initPos.phi << std::endl;
@@ -317,8 +336,8 @@ int main(int argc, char **argv)
             // Calculate target coordinates with an OFFSET
             for (int i = 0; i < boxes.coords.size(); ++i)
             {
-                std::cout << "Box coordinates: " << i << std::endl;
-                path.push_back(get_box_offset(boxes.coords[i], TARGET_OFFSET));
+                std::cout << "Pushing Box coordinates: " << i << std::endl;
+                path.push_back(get_box_offset(boxes.coords[i], TARGET_OFFSET)); // to change boxes for final path
                 path_idx.push_back(i);
             }
 
@@ -330,8 +349,14 @@ int main(int argc, char **argv)
 
             // ADD TSP HERE
             // TSP(initPos, path); // modify path to reflect ordered list
-            // take care of path_idx 
+            permutation(initPos, coordinates_ID, 0, length, combination, minDist);
 
+            // take care of path_idx
+            //Get reordered path indexes
+            reorder_path_idx(length, path_idx);
+
+            path = reorder_path(path, path_idx);
+            
             state = MOVE_TO_TARGET;
             break;
 
@@ -412,7 +437,7 @@ int main(int argc, char **argv)
         default:
             break;
         }
-        
+
         //imagePipeline.getTemplateID(boxes);
         // matchFound = false;
 
@@ -425,3 +450,7 @@ int main(int argc, char **argv)
 
     return 0;
 }
+
+/* *************************************************************** 
+                END Code Contest 2
+ *************************************************************** */
