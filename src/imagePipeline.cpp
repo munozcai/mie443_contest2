@@ -222,12 +222,20 @@ int ImagePipeline::getTemplateID(Boxes &boxes)
         cv::waitKey(10);
     }
 
-    if (maxGM > 55)
-    {
+    if (maxGM > 60)
+    {   
+        maxGM = 0 ;
         return template_id;
     }
-    else
+    else if (maxGM>55 && maxGM<=60)
     {
+        maxGM = 0 ;
+        return -1;
+    }
+    else
+
+    {
+        maxGM=0;
         return 3;
     }
 }
