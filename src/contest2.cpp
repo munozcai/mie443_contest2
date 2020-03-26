@@ -384,10 +384,10 @@ int main(int argc, char **argv)
                     ROS_ERROR("UNREACHABLE TARGET, going to next target");
                     index_target += 1;
                     state = MOVE_TO_TARGET;
-                    break;
                 }
                 else
                 { // retry from first element
+                    index_target = 0;
                     state = RETRY_TARGET;
                 }
             }
@@ -414,15 +414,23 @@ int main(int argc, char **argv)
             }
             else
             {
-                index_target += 1;
-                state = RETRY_TARGET;
+                if (index_target < path.size() - 1)
+                {
+                    index_target += 1;
+                    state = MOVE_TO_TARGET;
+                } else
+                {
+                    state = RETRY_TARGET;
+                }
+                
                 break;
             }
 
         case RETRY_TARGET:
 
-            // Replan path wigh targets left
+            // Replan path with targets left
             // could add more fancy staff such as timers etc...
+            index_target = 0;
             state = PATH_PLANNER;
             break;
 
