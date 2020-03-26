@@ -11,11 +11,11 @@
  *************************************************************** */
 //float distance, minDist;
 char combination[10];
-float coord[10];
+float coord[10]; 
 
 //to fill out coordinates x, y with 1 followed by 2, 3, 4, 5
+
 float dist[10][10];
-// Distance matrix ABCD X ABCD for coordinates ABCD. Takes two end points (x,y) and returns their distance
 float sqr_dist(float x1, float y1, float x2, float y2)
 {
     return std::sqrt(((x1 - x2) * (x1 - x2)) + ((y1 - y2) * (y1 - y2)));
@@ -24,12 +24,13 @@ void populate_dist(int n, float *ptr_coord)
 {
     int p = 0;
     int q = 0;
+
     for (int i = 0; i < n; i++)
     {
         for (int j = 0; j < n; j++)
         {
-            dist[i][j] = sqr_dist(*(ptr_coord + p), *(ptr_coord + p + 1),
-                                  *(ptr_coord + q), *(ptr_coord + q + 1));
+            dist[i][j] = sqr_dist(*(ptr_coord + p),*(ptr_coord+p + 1), 
+            *(ptr_coord + q), *(ptr_coord + q + 1));
             q = q + 2;
         }
         p = p + 2;
@@ -44,10 +45,11 @@ void swap_fcn(char *a, char *b)
     *b = temp;
 }
 
-void tsp(RobotPose localized_coord, char *a, int l, int r, char *b, float &minDist)
+void permutation(RobotPose localized_coord, char *a, int l, int r, char *b, float &minDist)
 { //l-> start of string, r-> end of string ABCD, a-> ptr to first character of string
     float distance;
     //float minDist = distance;
+
     if (l == r)
     {
         distance = 0.;
@@ -57,29 +59,31 @@ void tsp(RobotPose localized_coord, char *a, int l, int r, char *b, float &minDi
             distance += dist[(int(*(a + k)) - 48)][(int(*(a + k + 1)) - 48)];
         }
         distance += sqr_dist(localized_coord.x, localized_coord.y, coord[2 * (int(*a) - 48)],
-                             coord[2 * (int(*(a + 1)) - 48) + 1]); //x-> 2i, y-> 2i+1
-
-        distance += sqr_dist(coord[2 * (int(*(a + 8)) - 48)], coord[2 * (int(*(a + 9)) - 48) + 1],
-                             localized_coord.x, localized_coord.y); //for return distance
-
+         coord[2 * (int(*(a + 1)) - 48) + 1]);       //x-> 2i, y-> 2i+1
+        
+        distance += sqr_dist(coord[2 * (int(*(a + 8)) - 48)], coord[2 * (int(*(a + 9)) - 48) + 1], 
+        localized_coord.x, localized_coord.y); //for return distance
+        
         if (distance < minDist && distance > 0.)
         {
             for (int p = 0; p < r; p++)
             {
                 *(b + p) = *(a + p);
             }
+
             minDist = distance;
         }
         //cout<<a<<endl;
         std::cout << "string: " << a << " Dist: " << distance << "  min dist: " << minDist << std::endl;
     }
+
     else
     {
         for (int i = l; i < r; i++)
         {
             swap_fcn((a + l), (a + i));
-            tsp(localized_coord, a, l + 1, r, combination, minDist); //recursive call
-            swap_fcn((a + l), (a + i));                              //change it back to original for the next for loop
+            permutation(localized_coord, a, l + 1, r, combination, minDist); //recursive call
+            swap_fcn((a + l), (a + i));                                      //change it back to original for the next for loop
         }
     }
 }
@@ -106,11 +110,9 @@ void reorder_path_idx(int length, std::vector<float> &path_idx)
     }
 }
 
-std::vector<std::vector<float>> reorder_path(std::vector<std::vector<float>> path, std::vector<float> path_idx)
-{
+std::vector<std::vector<float>> reorder_path(std::vector<std::vector<float>> path, std::vector<float> path_idx){
     std::vector<std::vector<float>> new_path;
-    for (auto i = path_idx.begin(); i != path_idx.end(); i++)
-    {
+    for(auto i = path_idx.begin(); i!= path_idx.end(); i++){
         new_path.push_back(path[*i]);
         std::cout << "\nNew Box index:" << *i << "\nx:" << path[*i][0] << "\ny:" << path[*i][1] << "\nphi:" << path[*i][3] << std::endl;
     }
@@ -349,15 +351,16 @@ int main(int argc, char **argv)
             // Find optimal path
 
             // ADD TSP HERE
-            // TSP modify path to reflect ordered list
-            tsp(initPos, coordinates_ID, 0, length, combination, minDist);
-
-            // take care of path_idx
+            //TSP(initPos, path); // modify path to reflect ordered list
+            permutation(initPos, coordinates_ID, 0, length, combination, minDist);
+            std::cout <<"Optimized combination Box ID: " << combination << std::endl; 
+            
+             //take care of path_idx
             //Get reordered path indexes
             reorder_path_idx(length, path_idx);
 
             path = reorder_path(path, path_idx);
-
+            
             state = MOVE_TO_TARGET;
             break;
 
