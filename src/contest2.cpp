@@ -349,13 +349,13 @@ int main(int argc, char **argv)
 
             // ADD TSP HERE
             // TSP(initPos, path); // modify path to reflect ordered list
-            permutation(initPos, coordinates_ID, 0, length, combination, minDist);
+            // permutation(initPos, coordinates_ID, 0, length, combination, minDist);
 
             // take care of path_idx
             //Get reordered path indexes
-            reorder_path_idx(length, path_idx);
+            //reorder_path_idx(length, path_idx);
 
-            path = reorder_path(path, path_idx);
+            // path = reorder_path(path, path_idx);
             
             state = MOVE_TO_TARGET;
             break;
@@ -431,7 +431,11 @@ int main(int argc, char **argv)
 
             // Go back to initial position forever
             all_done = Navigation::moveToGoal(initPos.x, initPos.y, initPos.phi);
-
+                 if (all_done);
+                 {
+                    gen_txt(boxes);
+                    return 0; 
+                 }
             break;
 
         default:
