@@ -115,7 +115,7 @@ std::vector<std::vector<float>> reorder_path(std::vector<std::vector<float>> pat
 }
 
 // Calculates target location at a TARGET_OFFSET distance from box center facing the object
-#define TARGET_OFFSET 0.4
+#define TARGET_OFFSET 0.5
 std::vector<float> get_box_offset(std::vector<float> box, float offset)
 {
     std::vector<float> offset_coords;
@@ -315,14 +315,13 @@ int main(int argc, char **argv)
         int counter_1 = 0;
         bool all_done = false;
         ros::spinOnce();
-        /***YOUR CODE HERE***/
 
         switch (state)
         {
         case INITIALIZE:
             // Localize initial position
             std::cout << "\n NOTE: Ensure that robot is localized \n";
-            ros::Duration(5).sleep();
+            ros::Duration(1).sleep();
             ros::spinOnce();
 
             // Save initial position. For "returning to initial position" purposes

@@ -221,9 +221,14 @@ int ImagePipeline::getTemplateID(Boxes &boxes)
 
         cv::waitKey(10);
     }
+<<<<<<< Updated upstream
     if (maxGM > 60)
     {   
         maxGM = 0 ; 
+=======
+    if (maxGM > 100)
+    {
+>>>>>>> Stashed changes
         return template_id;
        
     }
