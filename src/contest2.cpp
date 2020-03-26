@@ -348,19 +348,25 @@ int main(int argc, char **argv)
             break;
 
         case PATH_PLANNER: // this is state is used again later to recalculate best path among unreachable targets
-            // Find optimal path
+                           // Find optimal path
 
-            // ADD TSP HERE
-            //TSP(initPos, path); // modify path to reflect ordered list
-            permutation(initPos, coordinates_ID, 0, length, combination, minDist);
-            std::cout <<"Optimized combination Box ID: " << combination << std::endl; 
-            
-             //take care of path_idx
-            //Get reordered path indexes
-            reorder_path_idx(length, path_idx);
+            try
+            {
+                permutation(initPos, coordinates_ID, 0, length, combination, minDist);
+                std::cout << "Optimized combination Box ID: " << combination << std::endl;
 
-            path = reorder_path(path, path_idx);
-            
+                //take care of path_idx
+                //Get reordered path indexes
+                reorder_path_idx(length, path_idx);
+
+                path = reorder_path(path, path_idx);
+            }
+            catch (...)
+            {
+                // do nothing, use default order
+                ROS_ERROR("Unable to solve TSP, proceeding with default list order");
+            }
+
             state = MOVE_TO_TARGET;
             break;
 
@@ -437,6 +443,7 @@ int main(int argc, char **argv)
             // could add more fancy staff such as timers etc...
             index_target = 0;
             state = PATH_PLANNER;
+
             break;
 
         case DONE:
